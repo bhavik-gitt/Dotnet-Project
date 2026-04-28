@@ -87,12 +87,12 @@ partial class Form1
 
         AutoScaleMode = AutoScaleMode.Dpi;
         BackColor = Color.FromArgb(10, 15, 24);
-        ClientSize = new Size(1080, 820);
+        ClientSize = new Size(400, 680);
         Controls.Add(contentPanel);
         Controls.Add(titleBar);
         Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
         FormBorderStyle = FormBorderStyle.None;
-        MinimumSize = new Size(960, 740);
+        MinimumSize = new Size(380, 640);
         Name = "Form1";
         StartPosition = FormStartPosition.CenterScreen;
         Text = "Calculator Pro";
@@ -115,7 +115,7 @@ partial class Form1
         subtitleLabel.AutoSize = true;
         subtitleLabel.Location = new Point(24, 39);
         subtitleLabel.Margin = new Padding(0);
-        subtitleLabel.Text = "Fast, clean, and precise calculations";
+        subtitleLabel.Text = "Keyboard supported  ·  Fast & precise";
         subtitleLabel.MouseDown += DragWindow;
 
         closeButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
@@ -123,7 +123,7 @@ partial class Form1
         closeButton.FlatStyle = FlatStyle.Flat;
         closeButton.Font = new Font("Segoe UI Semibold", 10.5F, FontStyle.Bold, GraphicsUnit.Point);
         closeButton.ForeColor = Color.White;
-        closeButton.Location = new Point(1010, 16);
+        closeButton.Location = new Point(334, 16);
         closeButton.Margin = new Padding(0);
         closeButton.Size = new Size(46, 32);
         closeButton.Text = "x";
@@ -134,7 +134,7 @@ partial class Form1
         minimizeButton.FlatStyle = FlatStyle.Flat;
         minimizeButton.Font = new Font("Segoe UI Semibold", 12F, FontStyle.Bold, GraphicsUnit.Point);
         minimizeButton.ForeColor = Color.White;
-        minimizeButton.Location = new Point(958, 16);
+        minimizeButton.Location = new Point(282, 16);
         minimizeButton.Margin = new Padding(0);
         minimizeButton.Size = new Size(46, 32);
         minimizeButton.Text = "-";

@@ -9,11 +9,13 @@ public partial class Form1 : Form
     private string? _pendingOperation;
     private bool _hasStoredValue;
     private bool _startNewEntry = true;
+    private bool _isError;
 
     public Form1()
     {
         InitializeComponent();
         DoubleBuffered = true;
+        KeyPreview = true;
         SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
         ApplyVisualState();
     }
@@ -58,9 +60,9 @@ public partial class Form1 : Form
         expressionLabel.ForeColor = Color.FromArgb(155, 172, 198);
         displayLabel.ForeColor = Color.White;
 
-        titleLabel.Font = new Font("Segoe UI Semibold", 15F, FontStyle.Bold, GraphicsUnit.Point);
-        subtitleLabel.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
-        expressionLabel.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point);
+        titleLabel.Font = new Font("Segoe UI Semibold", 12F, FontStyle.Bold, GraphicsUnit.Point);
+        subtitleLabel.Font = new Font("Segoe UI", 8F, FontStyle.Regular, GraphicsUnit.Point);
+        expressionLabel.Font = new Font("Segoe UI", 11F, FontStyle.Regular, GraphicsUnit.Point);
         displayLabel.Font = new Font("Segoe UI Semibold", 34F, FontStyle.Bold, GraphicsUnit.Point);
 
         SetAccentPalette();
@@ -168,55 +170,102 @@ public partial class Form1 : Form
         return value % 1 == 0 ? value.ToString("0") : value.ToString("0.##########");
     }
 
-    private decimal CurrentValue => decimal.Parse(displayLabel.Text, System.Globalization.CultureInfo.InvariantCulture);
+    private decimal CurrentValue
+    {
+        get
+        {
+            if (_isError) return 0m;
+            return decimal.TryParse(displayLabel.Text,
+                System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out decimal value) ? value : 0m;
+        }
+    }
+
+    // ── Display helpers ────────────────────────────────────────────────────────
+
+    private void UpdateDisplay(decimal value)
+    {
+        displayLabel.ForeColor = Color.White;
+        displayLabel.Text = FormatValue(value);
+        AdjustDisplayFont();
+    }
+
+    private void UpdateExpression(string text)
+    {
+        expressionLabel.Text = text;
+    }
+
+    private void ShowError(string message)
+    {
+        _isError = true;
+        displayLabel.ForeColor = Color.FromArgb(255, 100, 100);
+        displayLabel.Text = message;
+        _startNewEntry = true;
+        AdjustDisplayFont();
+    }
+
+    private void AdjustDisplayFont()
+    {
+        int len = displayLabel.Text.Length;
+        float size = len > 16 ? 18F :
+                     len > 12 ? 22F :
+                     len > 8  ? 28F : 34F;
+        if (Math.Abs(displayLabel.Font.Size - size) > 0.01f)
+            displayLabel.Font = new Font("Segoe UI Semibold", size, FontStyle.Bold, GraphicsUnit.Point);
+    }
+
+    // ── Digit / decimal input ──────────────────────────────────────────────────
+
+    private void EnterDigit(string digit)
+    {
+        if (_isError) return;
+        if (_startNewEntry || displayLabel.Text == "0")
+        {
+            displayLabel.Text = digit;
+            _startNewEntry = false;
+            AdjustDisplayFont();
+            return;
+        }
+        displayLabel.Text += digit;
+        AdjustDisplayFont();
+    }
 
     private void DigitClicked(object? sender, EventArgs e)
     {
-        if (sender is not Button button)
-        {
-            return;
-        }
-
-        if (_startNewEntry || displayLabel.Text == "0")
-        {
-            displayLabel.Text = button.Text;
-            _startNewEntry = false;
-            return;
-        }
-
-        displayLabel.Text += button.Text;
+        if (sender is Button button)
+            EnterDigit(button.Text);
     }
 
     private void DecimalClicked(object? sender, EventArgs e)
     {
+        if (_isError) return;
         if (_startNewEntry)
         {
             displayLabel.Text = "0.";
             _startNewEntry = false;
             return;
         }
-
         if (!displayLabel.Text.Contains('.'))
-        {
             displayLabel.Text += '.';
-        }
     }
+
+    // ── Edit actions ───────────────────────────────────────────────────────────
 
     private void BackspaceClicked(object? sender, EventArgs e)
     {
-        if (_startNewEntry)
-        {
-            return;
-        }
+        if (_startNewEntry || _isError) return;
 
         if (displayLabel.Text.Length <= 1 || (displayLabel.Text.Length == 2 && displayLabel.Text.StartsWith('-')))
         {
             displayLabel.Text = "0";
             _startNewEntry = true;
+            AdjustDisplayFont();
             return;
         }
 
         displayLabel.Text = displayLabel.Text[..^1];
+        AdjustDisplayFont();
     }
 
     private void ClearClicked(object? sender, EventArgs e)
@@ -225,42 +274,45 @@ public partial class Form1 : Form
         _pendingOperation = null;
         _hasStoredValue = false;
         _startNewEntry = true;
+        _isError = false;
         UpdateDisplay(0m);
         UpdateExpression(string.Empty);
     }
 
     private void SignClicked(object? sender, EventArgs e)
     {
-        if (displayLabel.Text == "0")
-        {
-            return;
-        }
-
+        if (_isError || displayLabel.Text == "0") return;
         displayLabel.Text = displayLabel.Text.StartsWith('-') ? displayLabel.Text[1..] : $"-{displayLabel.Text}";
         _startNewEntry = false;
     }
 
     private void PercentClicked(object? sender, EventArgs e)
     {
+        if (_isError) return;
         decimal value = CurrentValue / 100m;
         UpdateDisplay(value);
         _startNewEntry = true;
     }
 
+    // ── Arithmetic ─────────────────────────────────────────────────────────────
+
     private void OperationClicked(object? sender, EventArgs e)
     {
-        if (sender is not Button button)
-        {
-            return;
-        }
-
-        ApplyPendingOperation(button.Text);
+        if (_isError) return;
+        if (sender is Button button)
+            ApplyPendingOperation(button.Text);
     }
+
+    private bool IsDivisionByZero() =>
+        _pendingOperation == "÷" && CurrentValue == 0m;
 
     private void EqualsClicked(object? sender, EventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(_pendingOperation))
+        if (_isError || string.IsNullOrWhiteSpace(_pendingOperation)) return;
+
+        if (IsDivisionByZero())
         {
+            ShowError("Cannot ÷ 0");
             return;
         }
 
@@ -275,6 +327,8 @@ public partial class Form1 : Form
 
     private void ApplyPendingOperation(string operation)
     {
+        if (_isError) return;
+
         if (!_hasStoredValue)
         {
             _storedValue = CurrentValue;
@@ -287,6 +341,12 @@ public partial class Form1 : Form
 
         if (!_startNewEntry && _pendingOperation is not null)
         {
+            if (IsDivisionByZero())
+            {
+                ShowError("Cannot ÷ 0");
+                return;
+            }
+
             decimal result = ExecuteOperation(_storedValue, CurrentValue, _pendingOperation);
             _storedValue = result;
             UpdateDisplay(result);
@@ -305,20 +365,64 @@ public partial class Form1 : Form
             "-" => left - right,
             "×" => left * right,
             "÷" when right != 0m => left / right,
-            "÷" => 0m,
             _ => right
         };
     }
 
-    private void UpdateDisplay(decimal value)
+    // ── Keyboard support ───────────────────────────────────────────────────────
+
+    protected override void OnKeyDown(KeyEventArgs e)
     {
-        displayLabel.Text = FormatValue(value);
+        base.OnKeyDown(e);
+
+        bool handled = true;
+        switch (e.KeyCode)
+        {
+            case Keys.D0: case Keys.NumPad0: EnterDigit("0"); break;
+            case Keys.D1: case Keys.NumPad1: EnterDigit("1"); break;
+            case Keys.D2: case Keys.NumPad2: EnterDigit("2"); break;
+            case Keys.D3: case Keys.NumPad3: EnterDigit("3"); break;
+            case Keys.D4: case Keys.NumPad4: EnterDigit("4"); break;
+            case Keys.D5:
+                if (e.Shift) PercentClicked(null, EventArgs.Empty);
+                else EnterDigit("5");
+                break;
+            case Keys.NumPad5: EnterDigit("5"); break;
+            case Keys.D6: case Keys.NumPad6: EnterDigit("6"); break;
+            case Keys.D7: case Keys.NumPad7: EnterDigit("7"); break;
+            case Keys.D8:
+                if (e.Shift) ApplyPendingOperation("×");
+                else EnterDigit("8");
+                break;
+            case Keys.NumPad8: EnterDigit("8"); break;
+            case Keys.D9: case Keys.NumPad9: EnterDigit("9"); break;
+            case Keys.OemPeriod:
+            case Keys.Decimal: DecimalClicked(null, EventArgs.Empty); break;
+            case Keys.Add: ApplyPendingOperation("+"); break;
+            case Keys.Subtract:
+            case Keys.OemMinus: ApplyPendingOperation("-"); break;
+            case Keys.Multiply: ApplyPendingOperation("×"); break;
+            case Keys.Divide:
+            case Keys.OemQuestion: ApplyPendingOperation("÷"); break;
+            case Keys.Oemplus:
+                if (e.Shift) ApplyPendingOperation("+");
+                else EqualsClicked(null, EventArgs.Empty);
+                break;
+            case Keys.Enter: EqualsClicked(null, EventArgs.Empty); break;
+            case Keys.Escape:
+            case Keys.Delete: ClearClicked(null, EventArgs.Empty); break;
+            case Keys.Back: BackspaceClicked(null, EventArgs.Empty); break;
+            default: handled = false; break;
+        }
+
+        if (handled)
+        {
+            e.Handled = true;
+            e.SuppressKeyPress = true;
+        }
     }
 
-    private void UpdateExpression(string text)
-    {
-        expressionLabel.Text = text;
-    }
+    // ── Window chrome ──────────────────────────────────────────────────────────
 
     [DllImport("user32.dll")]
     private static extern bool ReleaseCapture();
