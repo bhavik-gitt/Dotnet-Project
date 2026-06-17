@@ -44,17 +44,6 @@ dotnet publish CalculatorPro/CalculatorPro.csproj \
 
 The output is written to `publish/win-x64/CalculatorPro.exe` — a single portable executable that requires no .NET runtime installation on the target machine.
 
-### Manual publish (any RID)
-
-```bash
-dotnet publish CalculatorPro/CalculatorPro.csproj \
-  -c Release \
-  -r win-x64 \
-  --self-contained true \
-  /p:PublishSingleFile=true \
-  /p:IncludeNativeLibrariesForSelfExtract=true \
-  -o publish/win-x64
-```
 
 ## Notes
 
