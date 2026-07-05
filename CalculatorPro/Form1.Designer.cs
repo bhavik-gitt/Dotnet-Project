@@ -132,7 +132,7 @@ partial class Form1
         minimizeButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         minimizeButton.FlatAppearance.BorderSize = 0;
         minimizeButton.FlatStyle = FlatStyle.Flat;
-        minimizeButton.Font = new Font("Segoe UI Semibold", 12F, FontStyle.Bold, GraphicsUnit.Point);
+        minimizeButton.Font = new Font("Calibri  Semibold", 12F, FontStyle.Bold, GraphicsUnit.Point);
         minimizeButton.ForeColor = Color.White;
         minimizeButton.Location = new Point(282, 16);
         minimizeButton.Margin = new Padding(0);
