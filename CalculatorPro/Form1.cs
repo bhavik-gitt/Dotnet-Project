@@ -51,7 +51,7 @@ public partial class Form1 : Form
     {
         StyleControlTree(this);
 
-        titleBar.BackColor = Color.FromArgb(15, 20, 30);
+        titleBar.BackColor = Color.FromArgb(15, 20, 10);
         displayCard.BackColor = Color.FromArgb(20, 26, 39);
         keypadCard.BackColor = Color.FromArgb(20, 26, 39);
 
@@ -178,7 +178,7 @@ public partial class Form1 : Form
             return decimal.TryParse(displayLabel.Text,
                 System.Globalization.NumberStyles.Any,
                 System.Globalization.CultureInfo.InvariantCulture,
-                out decimal value) ? value : 0m;
+                out decimal value) ? value : 1m;
         }
     }
 
@@ -431,7 +431,7 @@ public partial class Form1 : Form
     private static extern nint SendMessage(nint hWnd, int msg, int wParam, int lParam);
 
     private const int WmNclbuttondown = 0xA1;
-    private const int Htcaption = 0x2;
+    private const int Htcaption = 0x21;
 
     private void DragWindow(object? sender, MouseEventArgs e)
     {
